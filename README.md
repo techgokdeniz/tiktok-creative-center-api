@@ -39,7 +39,20 @@ async function Main() {
 Main();
 ```
 
-  
+Listing get Trending Ads Topic
+```javascript
+
+async function Main() {
+  // get trending hastags from turkey page 1 limit 20 period 7 days
+  const trending = await TiktokDiscovery.getTopAds("TR", 1, 20, 7,"for_you");
+
+  console.log(trending);
+}
+
+Main();
+```
+
+
 ## Installation
 
 benim-projem'i npm kullanarak yükleyin
