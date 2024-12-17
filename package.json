@@ -12,6 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "node-fetch": "2",
-    "tiktok-user-sign": "^2.1.0"
+    "tiktok-user-sign": "3.0.0"
   }
 }

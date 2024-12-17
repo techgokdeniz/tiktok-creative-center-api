@@ -45,6 +45,7 @@ class TiktokDiscovery {
       song: { min: 1, max: 20 },
       creators: { min: 1, max: 50 },
       videos: { min: 1, max: 20 },
+      ads: { min: 1, max: 20 },
     };
 
     if (!validLimits.hasOwnProperty(limitType)) {
@@ -200,6 +201,52 @@ class TiktokDiscovery {
 
     const resp = await fetch(
       `${config.endpoint}popular_trend/list?period=${period}&page=${page}&limit=${limit}&order_by=vv&country_code=${country_code}`,
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "tr-TR,tr;q=0.9",
+          ...signature,
+        },
+        body: null,
+        method: "GET",
+      }
+    );
+
+    if (resp.ok) {
+      const json = await resp.json();
+      return json.data;
+    } else {
+      throw new Error("Something went wrong.");
+    }
+  }
+
+  /**
+   * @typedef {'for_you' | 'popular' | 'impression' | 'ctr' | 'play_2s_rate' | 'play_6s_rate' | 'cvr' | 'like'} OrderBy
+   */
+
+  /**
+   *
+   * @param {string} country_code country code exp: TR, US, GB
+   * @param {number} page page number
+   * @param {number} limit song limit 1-20 maxiumum limit 20
+   * @param {number} period data period for trending songs 7, 30, 120
+   * @param {OrderBy} order_by for_you impression ctr play_2s_rate play_6s_rate cvr like
+   * @returns {Promise<any>} - Returns the response of the trending songs.
+   */
+  static async getTopAds(
+    country_code = "TR",
+    page = 1,
+    limit = 3,
+    period = 30,
+    order_by = "for_you"
+  ) {
+    await TiktokDiscovery.checkCountry(country_code);
+    let signature = await TiktokDiscovery.getSign();
+    await TiktokDiscovery.checkPeriod(period);
+    await TiktokDiscovery.checkLimit(limit, "ads");
+
+    const resp = await fetch(
+      `${config.endpoint}top_ads/v2/list?period=${period}&page=${page}&limit=${limit}&country_code=${country_code}&order_by=${order_by}`,
       {
         headers: {
           accept: "application/json, text/plain, */*",
