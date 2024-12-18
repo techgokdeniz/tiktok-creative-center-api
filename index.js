@@ -1,17 +1,28 @@
-import Sign from "tiktok-user-sign";
 import fetch from "node-fetch";
 import { countrycode } from "./filters.js";
 import crypto from "node:crypto";
 import config from "./config.js";
+import { getWebId, generateParams } from "tiktok-user-sign";
 
 class TiktokDiscovery {
-  constructor() {
+  /**
+   *
+   * @param {string} userAgent
+   */
+  constructor(
+    userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+  ) {
+    this.userAgent = userAgent;
     this.uuid = crypto.randomUUID();
+    this.webid = null;
   }
 
-  static async getSign() {
-    const signature = Sign(this.uuid);
-    return signature;
+  static async #getSign() {
+    if (!this.webid) {
+      this.webid = await getWebId(this.userAgent);
+    }
+
+    return generateParams(this.uuid, this.webid);
   }
 
   /**
@@ -74,7 +85,7 @@ class TiktokDiscovery {
     period = 7
   ) {
     await TiktokDiscovery.checkCountry(country_code);
-    let signature = await TiktokDiscovery.getSign();
+    let signature = await TiktokDiscovery.#getSign();
     await TiktokDiscovery.checkPeriod(period);
     await TiktokDiscovery.checkLimit(limit, "hashtag");
 
@@ -115,7 +126,7 @@ class TiktokDiscovery {
     period = 7
   ) {
     await TiktokDiscovery.checkCountry(country_code);
-    let signature = await TiktokDiscovery.getSign();
+    let signature = await TiktokDiscovery.#getSign();
     await TiktokDiscovery.checkPeriod(period);
     await TiktokDiscovery.checkLimit(limit, "song");
 
@@ -155,7 +166,7 @@ class TiktokDiscovery {
     period = 7
   ) {
     await TiktokDiscovery.checkCountry(country_code);
-    let signature = await TiktokDiscovery.getSign();
+    let signature = await TiktokDiscovery.#getSign();
     await TiktokDiscovery.checkPeriod(period);
     await TiktokDiscovery.checkLimit(limit, "creators");
 
@@ -195,7 +206,7 @@ class TiktokDiscovery {
     period = 7
   ) {
     await TiktokDiscovery.checkCountry(country_code);
-    let signature = await TiktokDiscovery.getSign();
+    let signature = await TiktokDiscovery.#getSign();
     await TiktokDiscovery.checkPeriod(period);
     await TiktokDiscovery.checkLimit(limit, "videos");
 
@@ -241,12 +252,56 @@ class TiktokDiscovery {
     order_by = "for_you"
   ) {
     await TiktokDiscovery.checkCountry(country_code);
-    let signature = await TiktokDiscovery.getSign();
+    let signature = await TiktokDiscovery.#getSign();
     await TiktokDiscovery.checkPeriod(period);
     await TiktokDiscovery.checkLimit(limit, "ads");
 
     const resp = await fetch(
       `${config.endpoint}top_ads/v2/list?period=${period}&page=${page}&limit=${limit}&country_code=${country_code}&order_by=${order_by}`,
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "tr-TR,tr;q=0.9",
+          ...signature,
+        },
+        body: null,
+        method: "GET",
+      }
+    );
+
+    if (resp.ok) {
+      const json = await resp.json();
+      return json.data;
+    } else {
+      throw new Error("Something went wrong.");
+    }
+  }
+
+  /**
+   *
+   * @param {string} country_code country code exp: TR, US, GB
+   * @param {number} page page number
+   * @param {string} keyword search keyword example: gym+training
+   * @param {number} limit song limit 1-20 maxiumum limit 20
+   * @param {number} period data period for trending songs 7, 30, 120
+   * @param {OrderBy} order_by for_you impression ctr play_2s_rate play_6s_rate cvr like
+   * @returns {Promise<any>} - Returns the response of the trending songs.
+   */
+  static async getTopAdsByKeyword(
+    country_code = "TR",
+    page = 1,
+    keyword = "gym+training",
+    limit = 3,
+    period = 30,
+    order_by = "for_you"
+  ) {
+    await TiktokDiscovery.checkCountry(country_code);
+    let signature = await TiktokDiscovery.#getSign();
+    await TiktokDiscovery.checkPeriod(period);
+    await TiktokDiscovery.checkLimit(limit, "ads");
+
+    const resp = await fetch(
+      `${config.endpoint}top_ads/v2/list?period=${period}&page=${page}&limit=${limit}&country_code=${country_code}&order_by=${order_by}&keyword=${keyword}`,
       {
         headers: {
           accept: "application/json, text/plain, */*",

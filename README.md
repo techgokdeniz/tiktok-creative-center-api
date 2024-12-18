@@ -52,6 +52,19 @@ async function Main() {
 Main();
 ```
 
+Listing get Trending Ads By Keyword
+```javascript
+
+async function Main() {
+  // get trending hastags from turkey page 1 limit 20 period 7 days
+  const trending = await TiktokDiscovery.getTopAdsByKeyword("TR", 1,'gym+training', 20, 7,"for_you");
+
+  console.log(trending);
+}
+
+Main();
+```
+
 
 ## Installation
 
